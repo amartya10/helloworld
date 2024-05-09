@@ -1,24 +1,30 @@
 package com.example.helloworld.ratelimiter;
 
+import io.netty.handler.logging.LogLevel;
+//import io.vertx.core.impl.logging.Logger;
+
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
-
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.logging.*;
 public class RateLimiter {
+  private final static Logger LOGGER =
+    Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
 
-
-  ScheduledThreadPoolExecutor threadPool
-    = new ScheduledThreadPoolExecutor(1);
+  private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
 
   public RateLimiter(){
   }
   public boolean start(){
-    threadPool.schedule(new CleanUp(), perSec, TimeUnit.SECONDS);
+
+    scheduler.scheduleAtFixedRate(new CleanUp(), 0, perSec, TimeUnit.SECONDS);
     return true;
   }
 
   public boolean stop(){
-    threadPool.shutdown();
+    scheduler.shutdown();
     return true;
 
   }
@@ -33,8 +39,7 @@ public class RateLimiter {
        currentCounter.incrementAndGet();
        flg = true;
     }
-    System.out.println(" token accquired: " + flg);
-
+    LOGGER.log(Level.INFO, "token acquired  " + flg);
     return  flg;
   }
 
@@ -42,17 +47,18 @@ public class RateLimiter {
     return currentCounter.get();
   }
 
-  class CleanUp implements Callable {
+  class CleanUp implements Runnable {
 
     public Object _clean() {
-      System.out.println("clean up token " + currentCounter);
+
+      LOGGER.log(Level.INFO, "clean up token  " + currentCounter);
 
       currentCounter.set(0);
-        return currentCounter;
+      return currentCounter;
     }
     @Override
-    public Object call() throws Exception {
-      return _clean();
+    public void run() {
+      _clean();
     }
   }
 
